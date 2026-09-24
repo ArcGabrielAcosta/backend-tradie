@@ -20,6 +20,11 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect('Content-Type', /html/)
+      .expect((res) => {
+        expect(res.text).toContain('Bienvenido al backend de Tradie');
+        expect(res.text).toContain('Swagger');
+        expect(res.text).toContain('NestLens');
+      });
   });
 });

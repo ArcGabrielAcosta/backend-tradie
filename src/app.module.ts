@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { NestLensModule } from 'nestlens';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { WelcomePage } from './welcome/welcome.page';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { AppService } from './app.service';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, WelcomePage],
 })
 export class AppModule {}
