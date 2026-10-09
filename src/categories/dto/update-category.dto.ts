@@ -1,4 +1,4 @@
-﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsOptional,
@@ -7,12 +7,13 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class CreateCategoryDto {
-  @ApiProperty({ example: 'Plomería' })
+export class UpdateCategoryDto {
+  @ApiPropertyOptional({ example: 'Plomería' })
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(80)
-  name!: string;
+  name?: string;
 
   @ApiPropertyOptional({ example: 'Instalaciones y reparaciones de agua' })
   @IsOptional()
@@ -20,7 +21,10 @@ export class CreateCategoryDto {
   @MaxLength(1000)
   description?: string;
 
-  @ApiPropertyOptional({ example: true, default: true })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Logical delete when set to false',
+  })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

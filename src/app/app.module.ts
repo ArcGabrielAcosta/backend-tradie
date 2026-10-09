@@ -1,29 +1,39 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { ConfigService } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { NestLensModule } from 'nestlens';
+import { AuthModule } from '../auth/auth.module';
+import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard';
+import { CategoriesModule } from '../categories/categories.module';
+import { AppConfigModule } from '../config/config.module';
+import { DatabaseModule } from '../database/database.module';
+import { RedisModule } from '../redis/redis.module';
+import { RedisService } from '../redis/redis.service';
+import { UsersModule } from '../users/users.module';
+import { WelcomePage } from '../welcome/welcome.page';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { WelcomePage } from '../welcome/welcome.page';
-import { ConfigAppModule } from '../config/config.module';
-import { DatabaseModule } from '../database/database.module';
-import { AuthModule } from '../auth/auth.module';
-import { UsersModule } from '../users/users.module';
-import { CategoriesModule } from '../categories/categories.module';
-import { ProfessionalsModule } from '../professionals/professionals.module';
-import { SearchModule } from '../search/search.module';
-import { GeoModule } from '../geo/geo.module';
-import { JobRequestsModule } from '../job-requests/job-requests.module';
-import { QuotesModule } from '../quotes/quotes.module';
-import { ChatModule } from '../chat/chat.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { RatingsModule } from '../ratings/ratings.module';
-import { HistoryModule } from '../history/history.module';
-import { AdminModule } from '../admin/admin.module';
-import { DashboardModule } from '../dashboard/dashboard.module';
-import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
-import { LandingModule } from '../landing/landing.module';
 
 @Module({
   imports: [
+    AppConfigModule,
+    RedisModule,
+    DatabaseModule,
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService, RedisService],
+      useFactory: (config: ConfigService, redis: RedisService) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl: config.get<number>('throttle.ttl') ?? 60000,
+            limit: config.get<number>('throttle.limit') ?? 100,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(redis.getClient()),
+      }),
+    }),
     NestLensModule.forRoot({
       enabled: process.env.NESTLENS_ENABLED !== 'false',
       path: process.env.NESTLENS_PATH ?? '/nestlens',
@@ -39,26 +49,22 @@ import { LandingModule } from '../landing/landing.module';
         },
       },
     }),
-    ConfigAppModule,
-    DatabaseModule,
-    AuthModule,
     UsersModule,
+    AuthModule,
     CategoriesModule,
-    ProfessionalsModule,
-    SearchModule,
-    GeoModule,
-    JobRequestsModule,
-    QuotesModule,
-    ChatModule,
-    NotificationsModule,
-    RatingsModule,
-    HistoryModule,
-    AdminModule,
-    DashboardModule,
-    SubscriptionsModule,
-    LandingModule,
   ],
   controllers: [AppController],
-  providers: [AppService, WelcomePage],
+  providers: [
+    AppService,
+    WelcomePage,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: FirebaseAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

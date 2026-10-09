@@ -1,6 +1,13 @@
--- Tradie — Modelo lógico / DDL inicial
+-- Tradie — Modelo lógico / DDL (estado actual tras migraciones)
 -- Motor: PostgreSQL 16 + PostGIS 3.4
--- Fuente: DER + modelo lógico (Excalidraw)
+-- Fuente: .workflows/10-modelado/03-modelo-logico.md + Excalidraw
+--
+-- Historial de migraciones TypeORM:
+--   20261009000001-InitialSchema              → DDL de dominio completo
+--   20261009000002-Sprint1AuthFirebaseIdentity → columnas Firebase / lockout en usuario
+--
+-- Preferir: npm run migration:run
+-- Este archivo es la referencia DDL legible; las migraciones son la vía canónica.
 
 CREATE EXTENSION IF NOT EXISTS postgis;
 
@@ -24,14 +31,24 @@ CREATE TYPE report_status AS ENUM ('abierto', 'en_revision', 'resuelto', 'descar
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE usuario (
-  id_usuario           BIGSERIAL PRIMARY KEY,
-  email                VARCHAR(150) NOT NULL UNIQUE,
-  password_hash        VARCHAR(255) NOT NULL,
-  rol                  user_role NOT NULL,
-  estado               user_status NOT NULL DEFAULT 'activo',
-  fecha_alta           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  fecha_actualizacion  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id_usuario               BIGSERIAL PRIMARY KEY,
+  firebase_uid             VARCHAR(128) UNIQUE,              -- Sprint 1
+  email                    VARCHAR(150) NOT NULL UNIQUE,
+  nombre_completo          VARCHAR(150),                     -- Sprint 1
+  telefono                 VARCHAR(30),                      -- Sprint 1
+  -- Nullable desde Sprint 1: credenciales en Firebase Auth
+  password_hash            VARCHAR(255),
+  rol                      user_role NOT NULL,
+  estado                   user_status NOT NULL DEFAULT 'activo',
+  intentos_login_fallidos  INT NOT NULL DEFAULT 0,            -- Sprint 1
+  bloqueado_hasta          TIMESTAMPTZ,                      -- Sprint 1
+  fecha_alta               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  fecha_actualizacion      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX idx_usuario_firebase_uid
+  ON usuario (firebase_uid)
+  WHERE firebase_uid IS NOT NULL;
 
 CREATE TABLE perfil_profesional (
   id_perfil                 BIGSERIAL PRIMARY KEY,
@@ -247,8 +264,6 @@ CREATE TABLE reporte (
 
 -- ---------------------------------------------------------------------------
 -- Consulta de referencia: profesionales cercanos (radio 10 km)
--- El punto del cliente suele venir del GPS (parámetro de request).
--- OSRM/OSM no forman parte de este esquema.
 -- ---------------------------------------------------------------------------
 -- SELECT p.*
 -- FROM perfil_profesional p

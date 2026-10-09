@@ -1,5 +1,6 @@
 import { Controller, Get, Header } from '@nestjs/common';
 import { ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common/decorators/public.decorator';
 import { AppService } from './app.service';
 
 @ApiTags('health')
@@ -7,6 +8,7 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Public()
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
   @ApiOperation({ summary: 'Welcome page / health check' })
@@ -17,5 +19,13 @@ export class AppController {
   })
   getWelcome(): string {
     return this.appService.getWelcomePage();
+  }
+
+  @Public()
+  @Get('health')
+  @ApiOperation({ summary: 'Liveness probe' })
+  @ApiResponse({ status: 200, description: 'Service is up' })
+  getHealth() {
+    return { data: { status: 'ok' } };
   }
 }
