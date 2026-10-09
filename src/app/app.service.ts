@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SystemStatus, WelcomePage } from './welcome/welcome.page';
+import { SystemStatus, WelcomePage } from '../welcome/welcome.page';
 
 @Injectable()
 export class AppService {
