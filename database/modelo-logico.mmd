@@ -1,0 +1,187 @@
+classDiagram
+  direction LR
+
+  class usuario {
+    +BIGINT id_usuario PK
+    +VARCHAR(150) email UK NN
+    +VARCHAR(255) password_hash NN
+    +user_role rol NN
+    +user_status estado NN
+    +TIMESTAMPTZ fecha_alta NN
+    +TIMESTAMPTZ fecha_actualizacion
+  }
+
+  class perfil_profesional {
+    +BIGINT id_perfil PK
+    +BIGINT id_usuario FK UK NN
+    +VARCHAR(100) zona_trabajo
+    +TEXT descripcion
+    +NUMERIC(3,2) reputacion NN
+    +validation_status estado_validacion NN
+    +availability_status disponibilidad NN
+    +GEOGRAPHY(POINT,4326) ubicacion
+    +TIMESTAMPTZ ubicacion_actualizada_en
+  }
+
+  class categoria_oficio {
+    +BIGINT id_categoria PK
+    +VARCHAR(80) nombre UK NN
+    +TEXT descripcion
+    +BOOLEAN activa NN
+  }
+
+  class perfil_categoria {
+    +BIGINT id_perfil PK FK
+    +BIGINT id_categoria PK FK
+  }
+
+  class documento_respaldo {
+    +BIGINT id_documento PK
+    +BIGINT id_perfil FK NN
+    +VARCHAR(40) tipo NN
+    +VARCHAR(500) url_archivo NN
+    +VARCHAR(20) estado_revision NN
+  }
+
+  class item_portfolio {
+    +BIGINT id_item PK
+    +BIGINT id_perfil FK NN
+    +VARCHAR(500) url_foto NN
+    +TEXT descripcion
+    +TIMESTAMPTZ fecha_alta NN
+  }
+
+  class solicitud_trabajo {
+    +BIGINT id_solicitud PK
+    +BIGINT id_cliente FK NN
+    +BIGINT id_categoria FK NN
+    +VARCHAR(120) titulo NN
+    +TEXT descripcion NN
+    +VARCHAR(100) zona
+    +request_status estado NN
+    +TIMESTAMPTZ fecha_publicacion NN
+    +GEOGRAPHY(POINT,4326) punto_servicio
+  }
+
+  class presupuesto {
+    +BIGINT id_presupuesto PK
+    +BIGINT id_solicitud FK NN
+    +BIGINT id_profesional FK NN
+    +NUMERIC(12,2) monto NN
+    +TEXT alcance
+    +TEXT condiciones
+    +quote_status estado NN
+    +TIMESTAMPTZ fecha_envio NN
+  }
+
+  class servicio {
+    +BIGINT id_servicio PK
+    +BIGINT id_presupuesto FK UK NN
+    +TIMESTAMPTZ fecha_acuerdo NN
+    +service_status estado NN
+    +TIMESTAMPTZ fecha_inicio
+    +TIMESTAMPTZ fecha_fin
+  }
+
+  class voucher {
+    +BIGINT id_voucher PK
+    +BIGINT id_servicio FK UK NN
+    +VARCHAR(40) codigo UK NN
+    +TIMESTAMPTZ fecha_emision NN
+    +JSONB datos_pedido
+  }
+
+  class calificacion {
+    +BIGINT id_calificacion PK
+    +BIGINT id_servicio FK UK NN
+    +BIGINT id_cliente FK NN
+    +SMALLINT puntaje NN
+    +TEXT comentario
+    +TIMESTAMPTZ fecha NN
+  }
+
+  class conversacion {
+    +BIGINT id_conversacion PK
+    +BIGINT id_solicitud FK UK NN
+    +BIGINT id_cliente FK NN
+    +BIGINT id_profesional FK NN
+    +VARCHAR(20) estado NN
+    +TIMESTAMPTZ fecha_inicio NN
+  }
+
+  class mensaje {
+    +BIGINT id_mensaje PK
+    +BIGINT id_conversacion FK NN
+    +BIGINT id_emisor FK NN
+    +TEXT contenido NN
+    +TIMESTAMPTZ fecha_envio NN
+    +BOOLEAN leido NN
+  }
+
+  class plan_suscripcion {
+    +BIGINT id_plan PK
+    +VARCHAR(80) nombre UK NN
+    +NUMERIC(12,2) precio NN
+    +TEXT beneficios
+    +BOOLEAN activo NN
+  }
+
+  class suscripcion {
+    +BIGINT id_suscripcion PK
+    +BIGINT id_usuario FK NN
+    +BIGINT id_plan FK NN
+    +TIMESTAMPTZ fecha_inicio NN
+    +TIMESTAMPTZ fecha_fin
+    +sub_status estado NN
+  }
+
+  class pago {
+    +BIGINT id_pago PK
+    +BIGINT id_suscripcion FK NN
+    +NUMERIC(12,2) monto NN
+    +TIMESTAMPTZ fecha NN
+    +payment_status estado NN
+    +VARCHAR(100) referencia
+  }
+
+  class devolucion {
+    +BIGINT id_devolucion PK
+    +BIGINT id_pago FK UK NN
+    +TEXT motivo NN
+    +NUMERIC(12,2) monto NN
+    +VARCHAR(20) estado NN
+  }
+
+  class reporte {
+    +BIGINT id_reporte PK
+    +BIGINT id_reportante FK NN
+    +BIGINT id_reportado FK NN
+    +TEXT motivo NN
+    +report_status estado NN
+    +TIMESTAMPTZ fecha NN
+  }
+
+  usuario "1" --> "0..1" perfil_profesional : tiene
+  usuario "1" --> "*" solicitud_trabajo : publica
+  usuario "1" --> "*" suscripcion : contrata
+  usuario "1" --> "*" reporte : reporta
+  usuario "1" --> "*" calificacion : emite
+  usuario "1" --> "*" mensaje : envia
+
+  perfil_profesional "1" --> "*" perfil_categoria : clasifica
+  categoria_oficio "1" --> "*" perfil_categoria : incluye
+  perfil_profesional "1" --> "*" documento_respaldo : adjunta
+  perfil_profesional "1" --> "*" item_portfolio : muestra
+  perfil_profesional "1" --> "*" presupuesto : ofrece
+
+  categoria_oficio "1" --> "*" solicitud_trabajo : categoriza
+  solicitud_trabajo "1" --> "*" presupuesto : recibe
+  solicitud_trabajo "1" --> "0..1" conversacion : abre
+  presupuesto "1" --> "0..1" servicio : genera
+  servicio "1" --> "0..1" voucher : emite
+  servicio "1" --> "0..1" calificacion : recibe
+  conversacion "1" --> "*" mensaje : contiene
+
+  plan_suscripcion "1" --> "*" suscripcion : define
+  suscripcion "1" --> "*" pago : cobra
+  pago "1" --> "0..1" devolucion : origina
